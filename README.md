@@ -1,36 +1,133 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Mention System
+
+A Next.js application demonstrating an advanced mention system with real-time user search and intelligent text formatting. This project showcases modern React patterns, TypeScript implementation, and sophisticated text manipulation for @mention functionality.
+
+## Features
+
+- **Advanced Mention System**: Type `@` to trigger user search and selection
+- **Dual Text Format**: Seamless conversion between display text (`@Alice`) and data text (`<@user_001>`)
+- **Real-time Search**: 300ms debounced search with fuzzy matching on both name and display name
+- **Smart Text Processing**: Maintains mention positions during text editing and conversion
+- **Keyboard Navigation**: Arrow keys and Enter for dropdown selection
+- **Modern UI**: Clean interface with Tailwind CSS styling
+- **TypeScript**: Fully typed implementation with strict type safety
 
 ## Getting Started
 
-First, run the development server:
+First, install dependencies:
 
 ```bash
+pnpm install
+# or
+npm install
+# or
+yarn install
+```
+
+Then, run the development server:
+
+```bash
+pnpm dev
+# or
 npm run dev
 # or
 yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the mention system in action.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## How It Works
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Mention System Architecture
+
+The application uses a sophisticated dual-text system:
+
+- **Display Text**: What users see in the textarea (`@Alice`, `@Bob`)
+- **Data Text**: Backend-compatible format (`<@user_001>`, `<@user_002>`)
+
+### Key Components
+
+- **MentionTextarea**: Main input component with mention detection and insertion
+- **UserDropdown**: Search results dropdown with keyboard navigation
+- **useMentionTextarea**: Custom hook managing mention state and search logic
+
+### Usage
+
+1. Type `@` in the textarea to trigger user search
+2. Continue typing to filter users by name or display name
+3. Use arrow keys to navigate search results
+4. Press Enter or click to select a user
+5. The mention is inserted and highlighted in the text
+
+## Technical Details
+
+### State Management
+- Mentions processed in reverse order to maintain position integrity
+- Asynchronous state synchronization with `setTimeout(0)` pattern
+- 150ms blur delay to allow dropdown interactions
+
+### Search Behavior
+- Matches both `user.name` AND `user.displayName` fields
+- 300ms debounced search for optimal performance
+- Search stops on whitespace or newlines
+
+### Text Conversion
+- `convertDisplayToDataText()` converts `@Alice` to `<@user_001>`
+- Position tracking maintains cursor and mention locations
+- `findMentionAtCursor()` detects @ symbol for search activation
+
+## Tech Stack
+
+- **Next.js 15.5.4** with App Router and Turbopack
+- **React 19.1.0** with modern hooks
+- **TypeScript 5** with strict type checking
+- **Tailwind CSS 4** for styling
+- **Biome** for linting and formatting
+
+## Development Commands
+
+```bash
+# Development
+pnpm dev              # Start development server
+pnpm build            # Build for production
+pnpm start            # Start production server
+
+# Code Quality
+pnpm lint             # Check code quality
+pnpm format           # Format code
+biome check --apply   # Fix linting and formatting issues
+```
+
+## Project Structure
+
+```
+src/
+├── app/                    # Next.js App Router
+├── components/             # Reusable UI components
+│   ├── MentionTextarea.tsx # Main mention input
+│   └── UserDropdown.tsx    # User selection dropdown
+├── hooks/                  # Custom React hooks
+│   └── useMentionTextarea.ts # Mention logic
+├── lib/                    # Static data
+├── types/                  # TypeScript definitions
+└── utils/                  # Text manipulation utilities
+```
+
+## Contributing
+
+This project uses Biome for code formatting and linting. Before submitting changes:
+
+1. Run `pnpm lint` to check code quality
+2. Run `pnpm format` to format code
+3. Test the mention functionality in the browser
+4. Ensure the production build succeeds with `pnpm build`
 
 ## Learn More
 
-To learn more about Next.js, take a look at the following resources:
+To learn more about the technologies used:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- [Next.js Documentation](https://nextjs.org/docs) - Next.js features and API
+- [React Documentation](https://react.dev) - React concepts and patterns
+- [TypeScript Documentation](https://www.typescriptlang.org/docs) - TypeScript usage
+- [Tailwind CSS](https://tailwindcss.com/docs) - Utility-first CSS framework
+- [Biome](https://biomejs.dev) - Fast formatter and linter

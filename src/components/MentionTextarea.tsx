@@ -8,15 +8,9 @@ interface MentionTextareaProps {
   onChange?: (displayText: string, dataText: string) => void;
   /** Callback when user submits (e.g., form submission) */
   onSubmit?: (dataText: string) => void;
-  /** Ref for the textarea element */
-  ref?: React.Ref<HTMLTextAreaElement>;
 }
 
-export function MentionTextarea({
-  onChange,
-  onSubmit,
-  ref,
-}: MentionTextareaProps) {
+export function MentionTextarea({ onChange, onSubmit }: MentionTextareaProps) {
   const {
     textState,
     searchState,
@@ -76,19 +70,7 @@ export function MentionTextarea({
         {/* Textarea container */}
         <div className="flex-1 relative">
           <textarea
-            ref={(node) => {
-              // Handle both internal ref and forwarded ref
-              if (textareaRef) {
-                textareaRef.current = node;
-              }
-              if (ref) {
-                if (typeof ref === "function") {
-                  ref(node);
-                } else if ("current" in ref) {
-                  ref.current = node;
-                }
-              }
-            }}
+            ref={textareaRef}
             value={textState.displayText}
             onChange={handleChange}
             onKeyDown={handleKeyDownInternal}
