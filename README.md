@@ -1,6 +1,6 @@
-# Mention System
+# Interactive Mention System Demo
 
-A Next.js application demonstrating an advanced mention system with real-time user search and intelligent text formatting. This project showcases modern React patterns, TypeScript implementation, and sophisticated text manipulation for @mention functionality.
+A Next.js application demonstrating an advanced mention system with real-time user search and intelligent text formatting. This interactive demo showcases modern React patterns, TypeScript implementation, and sophisticated text manipulation for @mention functionality with live preview of display and data formats.
 
 ## Features
 
@@ -9,6 +9,8 @@ A Next.js application demonstrating an advanced mention system with real-time us
 - **Real-time Search**: 300ms debounced search with fuzzy matching on both name and display name
 - **Smart Text Processing**: Maintains mention positions during text editing and conversion
 - **Keyboard Navigation**: Arrow keys and Enter for dropdown selection
+- **Live Preview**: Real-time display of both user interface and backend data formats
+- **Interactive Demo**: Complete testing environment with submission and clear functionality
 - **Modern UI**: Clean interface with Tailwind CSS styling
 - **TypeScript**: Fully typed implementation with strict type safety
 
@@ -34,7 +36,7 @@ npm run dev
 yarn dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the mention system in action.
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the interactive mention system demo in action.
 
 ## How It Works
 
@@ -58,6 +60,8 @@ The application uses a sophisticated dual-text system:
 3. Use arrow keys to navigate search results
 4. Press Enter or click to select a user
 5. The mention is inserted and highlighted in the text
+6. Watch the real-time preview showing both display and data formats
+7. Submit your message to see the final structured data output
 
 ## Technical Details
 

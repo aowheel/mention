@@ -25,12 +25,23 @@ export default function Home() {
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6">Mention Feature Demo</h1>
+      <h1 className="text-3xl font-bold mb-6">
+        Interactive Mention System Demo
+      </h1>
+      <p className="text-gray-600 mb-8 text-lg">
+        Type @ followed by a name to see the user mention functionality in
+        action. This demo showcases real-time user search, mention formatting,
+        and data conversion.
+      </p>
 
       <div className="space-y-6">
         {/* Main mention textarea */}
         <div className="bg-white p-6 border border-gray-200 rounded-lg shadow-sm">
-          <h2 className="text-xl font-semibold mb-4">Compose Message</h2>
+          <h2 className="text-xl font-semibold mb-4">Compose Your Message</h2>
+          <p className="text-sm text-gray-600 mb-4">
+            Start typing @ to mention users. Click on a suggestion or press
+            Tab/Enter to insert the mention.
+          </p>
           <MentionTextarea
             onChange={handleTextChange}
             onSubmit={handleSubmit}
@@ -58,8 +69,11 @@ export default function Home() {
         <div className="grid md:grid-cols-2 gap-6">
           <div className="bg-gray-50 p-4 rounded-lg">
             <h3 className="font-semibold mb-2 text-gray-700">
-              Display Text (What User Sees)
+              Display Text (User Interface)
             </h3>
+            <p className="text-xs text-gray-500 mb-2">
+              This is what users see in the interface with formatted mentions
+            </p>
             <pre className="text-sm bg-white p-3 rounded border overflow-auto">
               {displayText || "(empty)"}
             </pre>
@@ -67,8 +81,11 @@ export default function Home() {
 
           <div className="bg-gray-50 p-4 rounded-lg">
             <h3 className="font-semibold mb-2 text-gray-700">
-              Data Text (Internal Format)
+              Data Text (Backend Format)
             </h3>
+            <p className="text-xs text-gray-500 mb-2">
+              This is the structured data sent to your backend API
+            </p>
             <pre className="text-sm bg-white p-3 rounded border overflow-auto">
               {dataText || "(empty)"}
             </pre>
@@ -79,13 +96,14 @@ export default function Home() {
         {submittedData && (
           <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
             <h3 className="font-semibold mb-2 text-green-800">
-              Submitted Data
+              Successfully Submitted
             </h3>
             <pre className="text-sm bg-white p-3 rounded border overflow-auto">
               {submittedData}
             </pre>
             <p className="text-sm text-green-600 mt-2">
-              This is the data that would be sent to your backend API.
+              This structured data format can be easily processed by your
+              backend to identify mentioned users and handle notifications.
             </p>
           </div>
         )}
