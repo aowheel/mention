@@ -1,9 +1,4 @@
-export interface User {
-  id: `user_${string}`;
-  name: string;
-  displayName: string;
-  pfp: `https://${string}`;
-}
+import type { User } from "@/types/user";
 
 export const users: User[] = [
   {
