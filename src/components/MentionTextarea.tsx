@@ -65,8 +65,8 @@ export function MentionTextarea({ onChange, onSubmit }: MentionTextareaProps) {
 
   return (
     <div className="w-full">
-      {/* Main layout: textarea on left, dropdown area on right */}
-      <div className="flex gap-4">
+      {/* Responsive layout: side-by-side on desktop, stacked on mobile */}
+      <div className="flex flex-col lg:flex-row gap-4">
         {/* Textarea container */}
         <div className="flex-1 relative">
           <textarea
@@ -76,20 +76,20 @@ export function MentionTextarea({ onChange, onSubmit }: MentionTextareaProps) {
             onKeyDown={handleKeyDownInternal}
             onBlur={handleBlur}
             placeholder={"Type @ to mention someone..."}
-            className="w-full h-64 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none font-mono text-sm leading-relaxed"
+            className="w-full h-48 sm:h-56 lg:h-64 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none font-mono text-sm leading-relaxed"
             style={getMentionStyle(textState.displayText)}
           />
 
           {/* Status indicators */}
           {searchState.isSearching && (
-            <div className="absolute top-2 right-2 text-xs text-gray-500 bg-white px-2 py-1 rounded shadow">
+            <div className="absolute top-2 right-2 text-xs text-gray-500 bg-white px-2 py-1 rounded shadow z-10">
               Searching...
             </div>
           )}
         </div>
 
-        {/* Dropdown area - always reserve space */}
-        <div className="w-80 flex-shrink-0">
+        {/* Dropdown area - responsive width */}
+        <div className="w-full lg:w-80 lg:flex-shrink-0">
           <UserDropdown
             users={searchState.filteredUsers}
             selectedIndex={searchState.selectedIndex}
@@ -100,10 +100,10 @@ export function MentionTextarea({ onChange, onSubmit }: MentionTextareaProps) {
         </div>
       </div>
 
-      {/* Helper text */}
+      {/* Helper text - responsive layout */}
       <div className="mt-2 text-xs text-gray-500 space-y-1">
-        <div className="flex items-center justify-between">
-          <span>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <span className="flex items-center gap-1">
             Type{" "}
             <kbd className="px-1 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs">
               @
@@ -118,9 +118,16 @@ export function MentionTextarea({ onChange, onSubmit }: MentionTextareaProps) {
           </span>
         </div>
         {textState.mentions.length > 0 && (
-          <div>
+          <div className="text-wrap">
             Mentions:{" "}
-            {textState.mentions.map((m) => `@${m.displayName}`).join(", ")}
+            <span className="inline-flex flex-wrap gap-1">
+              {textState.mentions.map((m, index) => (
+                <span key={m.id} className="inline-block">
+                  @{m.displayName}
+                  {index < textState.mentions.length - 1 && ","}
+                </span>
+              ))}
+            </span>
           </div>
         )}
       </div>
