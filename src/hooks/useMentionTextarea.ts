@@ -69,7 +69,7 @@ export function useMentionTextarea(): UseMentionTextareaReturn {
   }, [filteredUsers]);
 
   // Select a user from dropdown
-  const handleSelectUser = useCallback(
+  const selectUser = useCallback(
     (user: User) => {
       if (!searchState.isSearching) return;
 
@@ -112,7 +112,7 @@ export function useMentionTextarea(): UseMentionTextareaReturn {
   );
 
   // Handle input changes
-  const handleInputChange = useCallback(
+  const handleInput = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       const newDisplayText = e.target.value;
       const cursorPos = e.target.selectionStart;
@@ -208,9 +208,7 @@ export function useMentionTextarea(): UseMentionTextareaReturn {
         case "Tab":
           e.preventDefault();
           if (searchState.filteredUsers[searchState.selectedIndex]) {
-            handleSelectUser(
-              searchState.filteredUsers[searchState.selectedIndex],
-            );
+            selectUser(searchState.filteredUsers[searchState.selectedIndex]);
           }
           break;
 
@@ -230,7 +228,7 @@ export function useMentionTextarea(): UseMentionTextareaReturn {
       dataTextState,
       searchState.filteredUsers,
       searchState.selectedIndex,
-      handleSelectUser,
+      selectUser,
     ],
   );
 
@@ -249,9 +247,9 @@ export function useMentionTextarea(): UseMentionTextareaReturn {
     dataTextState,
     searchState,
     textareaRef,
-    handleInputChange,
+    selectUser,
+    handleInput,
     handleKeyDown,
     handleBlur,
-    handleSelectUser,
   };
 }

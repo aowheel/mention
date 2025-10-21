@@ -9,10 +9,10 @@ export function MentionTextarea() {
     dataTextState,
     searchState,
     textareaRef,
-    handleInputChange,
+    selectUser,
+    handleInput,
     handleKeyDown,
     handleBlur,
-    handleSelectUser,
   } = useMentionTextarea();
 
   const displayText = convertDataToDisplayText(dataTextState);
@@ -38,7 +38,7 @@ export function MentionTextarea() {
           <textarea
             ref={textareaRef}
             value={displayText}
-            onChange={handleInputChange}
+            onInput={handleInput}
             onKeyDown={handleKeyDown}
             onBlur={handleBlur}
             placeholder={"Type @ to mention someone..."}
@@ -59,7 +59,7 @@ export function MentionTextarea() {
             users={searchState.filteredUsers}
             selectedIndex={searchState.selectedIndex}
             isVisible={searchState.showDropdown}
-            onSelectUser={handleSelectUser}
+            onSelectUser={selectUser}
             searchQuery={searchState.searchQuery}
           />
         </div>
