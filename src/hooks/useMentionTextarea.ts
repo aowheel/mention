@@ -2,30 +2,27 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { users } from "@/lib/data";
-import type {
-  MentionData,
-  SearchState,
-  TextState,
-  UseMentionTextareaReturn,
-} from "@/types/mention";
+import type { SearchState, UseMentionTextareaReturn } from "@/types/mention";
 import type { User } from "@/types/user";
 import {
-  convertDisplayToDataText,
-  findMentionAtCursor,
-  generateMentionId,
+  checkMentionSearch,
+  convertDataToDisplayText,
+  deleteTextWithMentions,
+  insertCharIntoText,
   insertMentionIntoText,
 } from "@/utils/mentionUtils";
 
 export function useMentionTextarea(): UseMentionTextareaReturn {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Text state management
-  const [textState, setTextState] = useState<TextState>({
-    displayText: "",
-    dataText: "",
-    mentions: [],
-    cursorPosition: 0,
-  });
+  // Internal data text state (using <@user_id> format)
+  const [dataTextState, setDataTextState] = useState("");
+
+  // Display text (computed from dataText)
+  const displayText = useMemo(
+    () => convertDataToDisplayText(dataTextState),
+    [dataTextState],
+  );
 
   // Search state management
   const [searchState, setSearchState] = useState<SearchState>({
@@ -53,7 +50,7 @@ export function useMentionTextarea(): UseMentionTextareaReturn {
   const filteredUsers = useMemo(() => {
     const query = debouncedSearchQuery.toLowerCase();
 
-    return users.filter((user: User) => {
+    return users.filter((user) => {
       const name = user.name.toLowerCase();
       const displayName = user.displayName.toLowerCase();
 
@@ -72,39 +69,23 @@ export function useMentionTextarea(): UseMentionTextareaReturn {
   }, [filteredUsers]);
 
   // Select a user from dropdown
-  const selectUser = useCallback(
+  const handleSelectUser = useCallback(
     (user: User) => {
       if (!searchState.isSearching) return;
 
-      // Create new mention
-      const newMention: MentionData = {
-        id: generateMentionId(),
-        userId: user.id,
-        displayName: user.displayName,
-        startPosition: searchState.searchStartPosition,
-        endPosition:
-          searchState.searchStartPosition + `@${user.displayName}`.length,
-      };
+      // Get cursor position before @ symbol
+      const searchStart = searchState.searchStartPosition;
+      const cursorPos = textareaRef.current?.selectionStart ?? 0;
 
-      // Insert mention into text
-      const { displayText, dataText } = insertMentionIntoText(
-        textState.displayText,
-        newMention,
-        searchState.searchStartPosition,
-        textState.cursorPosition,
+      // Insert mention into data text
+      const result = insertMentionIntoText(
+        dataTextState,
+        user,
+        searchStart,
+        cursorPos,
       );
 
-      // Update mentions array
-      const updatedMentions = [...textState.mentions, newMention];
-
-      // Update text state
-      setTextState((prev) => ({
-        ...prev,
-        displayText,
-        dataText,
-        mentions: updatedMentions,
-        cursorPosition: newMention.endPosition,
-      }));
+      setDataTextState(result.dataText);
 
       // Clear search state
       setSearchState((prev) => ({
@@ -116,43 +97,36 @@ export function useMentionTextarea(): UseMentionTextareaReturn {
         selectedIndex: 0,
       }));
 
-      // Set cursor position
+      // Set cursor position after mention
       setTimeout(() => {
         if (textareaRef.current) {
           textareaRef.current.setSelectionRange(
-            newMention.endPosition,
-            newMention.endPosition,
+            result.displayCursorPos,
+            result.displayCursorPos,
           );
           textareaRef.current.focus();
         }
       }, 0);
     },
-    [searchState, textState],
+    [searchState, dataTextState],
   );
 
   // Handle input changes
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      const newText = e.target.value;
-      const cursorPosition = e.target.selectionStart;
+      const newDisplayText = e.target.value;
+      const cursorPos = e.target.selectionStart;
 
-      // Update text state
-      setTextState((prev) => ({
-        ...prev,
-        displayText: newText,
-        cursorPosition,
-      }));
+      // Check for @ search at cursor position using utility function
+      const mentionSearchInfo = checkMentionSearch(newDisplayText, cursorPos);
 
-      // Check for mention at cursor
-      const mentionInfo = findMentionAtCursor(newText, cursorPosition);
-
-      if (mentionInfo.isSearching) {
+      if (mentionSearchInfo.isSearching) {
         // Start or update search
         setSearchState((prev) => ({
           ...prev,
           isSearching: true,
-          searchQuery: mentionInfo.searchQuery,
-          searchStartPosition: mentionInfo.searchStartPosition,
+          searchQuery: mentionSearchInfo.searchQuery,
+          searchStartPosition: mentionSearchInfo.searchStartPosition,
           showDropdown: true,
         }));
       } else {
@@ -166,18 +140,51 @@ export function useMentionTextarea(): UseMentionTextareaReturn {
           selectedIndex: 0,
         }));
       }
+
+      // Update data text based on display text change
+      if (newDisplayText.length === displayText.length + 1) {
+        const newChar = newDisplayText.charAt(cursorPos - 1);
+        const result = insertCharIntoText(
+          dataTextState,
+          newChar,
+          cursorPos - 1,
+        );
+        setDataTextState(result.dataText);
+      }
     },
-    [],
+    [displayText, dataTextState],
   );
 
   // Handle key down events
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      if (!searchState.showDropdown || searchState.filteredUsers.length === 0) {
-        return;
-      }
+      const selectionStart = e.currentTarget.selectionStart;
+      const selectionEnd = e.currentTarget.selectionEnd;
 
       switch (e.key) {
+        case "Backspace": {
+          e.preventDefault();
+
+          // Apply deletion to data text
+          const result = deleteTextWithMentions(
+            dataTextState,
+            selectionStart,
+            selectionEnd,
+          );
+          setDataTextState(result.dataText);
+
+          // Update cursor position
+          setTimeout(() => {
+            if (textareaRef.current) {
+              textareaRef.current.setSelectionRange(
+                result.displayCursorPos,
+                result.displayCursorPos,
+              );
+            }
+          }, 0);
+          break;
+        }
+
         case "ArrowDown":
           e.preventDefault();
           setSearchState((prev) => ({
@@ -201,7 +208,9 @@ export function useMentionTextarea(): UseMentionTextareaReturn {
         case "Tab":
           e.preventDefault();
           if (searchState.filteredUsers[searchState.selectedIndex]) {
-            selectUser(searchState.filteredUsers[searchState.selectedIndex]);
+            handleSelectUser(
+              searchState.filteredUsers[searchState.selectedIndex],
+            );
           }
           break;
 
@@ -218,10 +227,10 @@ export function useMentionTextarea(): UseMentionTextareaReturn {
       }
     },
     [
-      searchState.showDropdown,
+      dataTextState,
       searchState.filteredUsers,
       searchState.selectedIndex,
-      selectUser,
+      handleSelectUser,
     ],
   );
 
@@ -236,19 +245,13 @@ export function useMentionTextarea(): UseMentionTextareaReturn {
     }, 150);
   }, []);
 
-  // Get final data text
-  const getDataText = useCallback(() => {
-    return convertDisplayToDataText(textState.displayText, textState.mentions);
-  }, [textState.displayText, textState.mentions]);
-
   return {
-    textState,
+    dataTextState,
     searchState,
     textareaRef,
     handleInputChange,
     handleKeyDown,
     handleBlur,
-    selectUser,
-    getDataText,
+    handleSelectUser,
   };
 }

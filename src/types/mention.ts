@@ -1,36 +1,6 @@
 import type { User } from "./user";
 
 /**
- * Represents a mention within text
- */
-export interface MentionData {
-  /** Unique identifier for this mention instance */
-  id: string;
-  /** User ID being mentioned */
-  userId: string;
-  /** Display name shown to the user */
-  displayName: string;
-  /** Start position in the display text */
-  startPosition: number;
-  /** End position in the display text */
-  endPosition: number;
-}
-
-/**
- * Current state of the text with mentions
- */
-export interface TextState {
-  /** Text as displayed to the user (@DisplayName format) */
-  displayText: string;
-  /** Text in data format (<@user_id> format) */
-  dataText: string;
-  /** Array of active mentions with their positions */
-  mentions: MentionData[];
-  /** Current cursor position in the display text */
-  cursorPosition: number;
-}
-
-/**
  * State for mention search and dropdown
  */
 export interface SearchState {
@@ -52,8 +22,8 @@ export interface SearchState {
  * Return type for useMentionTextarea hook
  */
 export interface UseMentionTextareaReturn {
-  /** Current text state */
-  textState: TextState;
+  /** Internal data text */
+  dataTextState: string;
   /** Current search state */
   searchState: SearchState;
   /** Reference to attach to textarea element */
@@ -65,7 +35,5 @@ export interface UseMentionTextareaReturn {
   /** Handle blur events */
   handleBlur: () => void;
   /** Select a user from dropdown */
-  selectUser: (user: User) => void;
-  /** Get final data text with <@user_id> format */
-  getDataText: () => string;
+  handleSelectUser: (user: User) => void;
 }

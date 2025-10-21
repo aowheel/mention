@@ -1,83 +1,48 @@
 "use client";
 
 import { useMentionTextarea } from "@/hooks/useMentionTextarea";
+import { convertDataToDisplayText } from "@/utils/mentionUtils";
 import { UserDropdown } from "./UserDropdown";
 
-interface MentionTextareaProps {
-  /** Callback when text changes */
-  onChange?: (displayText: string, dataText: string) => void;
-  /** Callback when user submits (e.g., form submission) */
-  onSubmit?: (dataText: string) => void;
-}
-
-export function MentionTextarea({ onChange, onSubmit }: MentionTextareaProps) {
+export function MentionTextarea() {
   const {
-    textState,
+    dataTextState,
     searchState,
     textareaRef,
     handleInputChange,
     handleKeyDown,
     handleBlur,
-    selectUser,
-    getDataText,
+    handleSelectUser,
   } = useMentionTextarea();
 
-  // Handle text changes and notify parent
-  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    handleInputChange(e);
-
-    if (onChange) {
-      // Use timeout to get updated state after handleInputChange
-      setTimeout(() => {
-        onChange(textState.displayText, getDataText());
-      }, 0);
-    }
-  };
-
-  // Handle form submission
-  const handleSubmitInternal = () => {
-    if (onSubmit) {
-      onSubmit(getDataText());
-    }
-  };
-
-  // Enhanced key down handler
-  const handleKeyDownInternal = (
-    e: React.KeyboardEvent<HTMLTextAreaElement>,
-  ) => {
-    // Handle form submission with Ctrl+Enter or Cmd+Enter
-    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
-      e.preventDefault();
-      handleSubmitInternal();
-      return;
-    }
-
-    // Pass to mention handler
-    handleKeyDown(e);
-  };
-
-  // Calculate mention styles for visual feedback
-  const getMentionStyle = (text: string): React.CSSProperties => {
-    // This is a simplified approach - for a full implementation,
-    // you'd want to use a rich text editor or overlay approach
-    return {};
-  };
+  const displayText = convertDataToDisplayText(dataTextState);
 
   return (
-    <div className="w-full">
+    <div className="w-full space-y-4">
+      {/* Debug Info */}
+      <div className="bg-gray-100 p-4 rounded-lg space-y-2 text-sm font-mono">
+        <div>
+          <span className="font-semibold">Display Text:</span>{" "}
+          {displayText || "(empty)"}
+        </div>
+        <div>
+          <span className="font-semibold">Data Text:</span>{" "}
+          {dataTextState || "(empty)"}
+        </div>
+      </div>
+
       {/* Responsive layout: side-by-side on desktop, stacked on mobile */}
       <div className="flex flex-col lg:flex-row gap-4">
         {/* Textarea container */}
         <div className="flex-1 relative">
           <textarea
             ref={textareaRef}
-            value={textState.displayText}
-            onChange={handleChange}
-            onKeyDown={handleKeyDownInternal}
+            value={displayText}
+            onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
             onBlur={handleBlur}
             placeholder={"Type @ to mention someone..."}
             className="w-full h-48 sm:h-56 lg:h-64 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none font-mono text-sm leading-relaxed"
-            style={getMentionStyle(textState.displayText)}
           />
 
           {/* Status indicators */}
@@ -94,42 +59,10 @@ export function MentionTextarea({ onChange, onSubmit }: MentionTextareaProps) {
             users={searchState.filteredUsers}
             selectedIndex={searchState.selectedIndex}
             isVisible={searchState.showDropdown}
-            onSelectUser={selectUser}
+            onSelectUser={handleSelectUser}
             searchQuery={searchState.searchQuery}
           />
         </div>
-      </div>
-
-      {/* Helper text - responsive layout */}
-      <div className="mt-2 text-xs text-gray-500 space-y-1">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-          <span className="flex items-center gap-1">
-            Type{" "}
-            <kbd className="px-1 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs">
-              @
-            </kbd>{" "}
-            to mention users
-          </span>
-          <span className="flex items-center gap-2">
-            <kbd className="px-1 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs">
-              Ctrl+Enter
-            </kbd>
-            <span>to submit</span>
-          </span>
-        </div>
-        {textState.mentions.length > 0 && (
-          <div className="text-wrap">
-            Mentions:{" "}
-            <span className="inline-flex flex-wrap gap-1">
-              {textState.mentions.map((m, index) => (
-                <span key={m.id} className="inline-block">
-                  @{m.displayName}
-                  {index < textState.mentions.length - 1 && ","}
-                </span>
-              ))}
-            </span>
-          </div>
-        )}
       </div>
     </div>
   );

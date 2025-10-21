@@ -1,29 +1,18 @@
-import type { MentionData } from "@/types/mention";
+import { users } from "@/lib/data";
 import type { User } from "@/types/user";
 
-/**
- * Regular expression to match mention patterns in text
- */
-const MENTION_PATTERN = /@(\w+)/g;
+const MENTION_PATTERN = /<@(user_\w+)>/g;
 
-/**
- * Regular expression to match data format mentions
- */
-const DATA_MENTION_PATTERN = /<@(user_\w+)>/g;
-
-/**
- * Generate a unique ID for a mention
- */
-export function generateMentionId(): string {
-  return `mention_${crypto.randomUUID()}`;
+export function convertDataToDisplayText(dataText: string): string {
+  return dataText.replaceAll(MENTION_PATTERN, (match, userId) => {
+    const user = users.find((u) => u.id === userId);
+    return user ? `@${user.displayName}` : match;
+  });
 }
 
-/**
- * Find @ symbol position and extract search query at cursor position
- */
-export function findMentionAtCursor(
-  text: string,
-  cursorPosition: number,
+export function checkMentionSearch(
+  displayText: string,
+  cursorPos: number,
 ): {
   isSearching: boolean;
   searchQuery: string;
@@ -31,16 +20,16 @@ export function findMentionAtCursor(
 } {
   // Look backward from cursor position to find @ symbol
   let searchStartPosition = -1;
-  let i = cursorPosition - 1;
+  let i = cursorPos - 1;
 
   // Find the closest @ before cursor
   while (i >= 0) {
-    if (text[i] === "@") {
+    if (displayText[i] === "@" && (i === 0 || /\s/.test(displayText[i - 1]))) {
       searchStartPosition = i;
       break;
     }
-    // Stop if we hit whitespace or another mention
-    if (text[i] === " " || text[i] === "\n") {
+    // Stop if we hit whitespace
+    if (/\s/.test(displayText[i])) {
       break;
     }
     i--;
@@ -55,16 +44,7 @@ export function findMentionAtCursor(
   }
 
   // Extract text from @ to cursor position
-  const searchQuery = text.slice(searchStartPosition + 1, cursorPosition);
-
-  // Check if there's whitespace in the query (invalid mention)
-  if (searchQuery.includes(" ") || searchQuery.includes("\n")) {
-    return {
-      isSearching: false,
-      searchQuery: "",
-      searchStartPosition: -1,
-    };
-  }
+  const searchQuery = displayText.slice(searchStartPosition + 1, cursorPos);
 
   return {
     isSearching: true,
@@ -73,121 +53,150 @@ export function findMentionAtCursor(
   };
 }
 
-/**
- * Parse text to extract existing mentions and their positions
- */
-export function parseExistingMentions(
-  displayText: string,
+function displayToDataCursorPos(
   dataText: string,
-): MentionData[] {
-  const mentions: MentionData[] = [];
-  const displayMatches = Array.from(displayText.matchAll(MENTION_PATTERN));
-  const dataMatches = Array.from(dataText.matchAll(DATA_MENTION_PATTERN));
-
-  // Match display mentions with data mentions by position
-  displayMatches.forEach((displayMatch, index) => {
-    const dataMatch = dataMatches[index];
-    if (dataMatch) {
-      mentions.push({
-        id: generateMentionId(),
-        userId: dataMatch[1], // Extract user_id from <@user_id>
-        displayName: displayMatch[1], // Extract displayName from @displayName
-        startPosition: displayMatch.index,
-        endPosition: displayMatch.index + displayMatch[0].length,
-      });
-    }
-  });
-
-  return mentions;
-}
-
-/**
- * Insert mention into text at specified position
- */
-export function insertMentionIntoText(
-  text: string,
-  mention: MentionData,
-  startPosition: number,
-  endPosition: number,
-): { displayText: string; dataText: string } {
-  const beforeText = text.slice(0, startPosition);
-  const afterText = text.slice(endPosition);
-
-  const displayText = `${beforeText}@${mention.displayName}${afterText}`;
-  const dataText = `${beforeText}<@${mention.userId}>${afterText}`;
-
-  return { displayText, dataText };
-}
-
-/**
- * Convert display text with mentions to data format
- */
-export function convertDisplayToDataText(
-  displayText: string,
-  mentions: MentionData[],
-): string {
-  let dataText = displayText;
-
-  // Sort mentions by position (reverse order to maintain positions)
-  const sortedMentions = [...mentions].sort(
-    (a, b) => b.startPosition - a.startPosition,
-  );
-
-  sortedMentions.forEach((mention) => {
-    const dataFormat = `<@${mention.userId}>`;
-
-    dataText =
-      dataText.slice(0, mention.startPosition) +
-      dataFormat +
-      dataText.slice(mention.endPosition);
-  });
-
-  return dataText;
-}
-
-/**
- * Convert data text to display format
- */
-export function convertDataToDisplayText(
-  dataText: string,
-  userMap: Map<string, User>,
+  displayCursorPos: number,
 ): {
-  displayText: string;
-  mentions: MentionData[];
+  dataCursorPos: number;
+  inMention: boolean;
+  mentionStart?: number;
+  mentionEnd?: number;
 } {
-  let displayText = dataText;
-  const mentions: MentionData[] = [];
-  const matches = Array.from(dataText.matchAll(DATA_MENTION_PATTERN));
+  const matches = dataText.matchAll(MENTION_PATTERN);
+  let displayCharCount = 0;
+  let dataCharCount = 0;
 
-  // Process matches in reverse order to maintain positions
-  matches.reverse().forEach((match) => {
-    const userId = match[1];
-    const user = userMap.get(userId);
+  for (const match of matches) {
+    // Length of text before this mention in data
+    const textBeforeLength = match.index - dataCharCount;
 
-    if (user) {
-      const startIndex = match.index;
-      const endIndex = startIndex + match[0].length;
-      const displayName = user.displayName;
-
-      // Replace data format with display format
-      displayText =
-        displayText.slice(0, startIndex) +
-        `@${displayName}` +
-        displayText.slice(endIndex);
-
-      // Calculate new positions after replacement
-      const newStartPosition = startIndex;
-      const newEndPosition = startIndex + `@${displayName}`.length;
-
-      mentions.unshift({
-        id: generateMentionId(),
-        userId,
-        displayName,
-        startPosition: newStartPosition,
-        endPosition: newEndPosition,
-      });
+    // Check if position is before this mention
+    if (displayCursorPos < displayCharCount + textBeforeLength) {
+      // Position is in the text before this mention
+      return {
+        dataCursorPos: dataCharCount + (displayCursorPos - displayCharCount),
+        inMention: false,
+      };
     }
-  });
 
-  return { displayText, mentions };
+    // Update counters for text before mention
+    displayCharCount += textBeforeLength;
+    dataCharCount += textBeforeLength;
+
+    // Get mention lengths
+    const user = users.find((u) => u.id === match[1]);
+    const displayMention = user ? `@${user.displayName}` : match[0];
+    const dataMention = match[0];
+
+    // Check if position is within or at the end of this mention in display
+    if (displayCursorPos <= displayCharCount + displayMention.length) {
+      // Position is inside mention - calculate proportional position in data mention
+      const offsetInDisplay = displayCursorPos - displayCharCount;
+      const ratio = offsetInDisplay / displayMention.length;
+      const offsetInData = Math.floor(ratio * dataMention.length);
+
+      return {
+        dataCursorPos: dataCharCount + offsetInData,
+        inMention: true,
+        mentionStart: match.index,
+        mentionEnd: match.index + match[0].length,
+      };
+    }
+
+    // Update counters for mention
+    displayCharCount += displayMention.length;
+    dataCharCount += dataMention.length;
+  }
+
+  // Position is after all mentions
+  return {
+    dataCursorPos: dataCharCount + (displayCursorPos - displayCharCount),
+    inMention: false,
+  };
+}
+
+export function insertCharIntoText(
+  dataText: string,
+  char: string,
+  displayCursorPos: number,
+): { dataText: string; displayCursorPos: number } {
+  const info = displayToDataCursorPos(dataText, displayCursorPos);
+  const beforeText = dataText.slice(0, info.dataCursorPos);
+  const afterText = dataText.slice(info.dataCursorPos);
+
+  const newDataText = beforeText + char + afterText;
+  const newDisplayCursorPos = displayCursorPos + char.length;
+
+  return {
+    dataText: newDataText,
+    displayCursorPos: newDisplayCursorPos,
+  };
+}
+
+export function insertMentionIntoText(
+  dataText: string,
+  user: User,
+  startDisplayCursorPos: number,
+  endDisplayCursorPos: number,
+): { dataText: string; displayCursorPos: number } {
+  const startInfo = displayToDataCursorPos(dataText, startDisplayCursorPos);
+  const endInfo = displayToDataCursorPos(dataText, endDisplayCursorPos);
+
+  let beforeText = dataText.slice(0, startInfo.dataCursorPos);
+  if (!beforeText.endsWith(" ")) {
+    beforeText = `${beforeText} `;
+  }
+
+  let afterText = dataText.slice(endInfo.dataCursorPos);
+  if (!afterText.startsWith(" ")) {
+    afterText = ` ${afterText}`;
+  }
+
+  const displayCursorPos = convertDataToDisplayText(
+    `${beforeText}<@${user.id}>$ `,
+  ).length;
+
+  return {
+    dataText: `${beforeText}<@${user.id}>${afterText}`,
+    displayCursorPos,
+  };
+}
+
+export function deleteTextWithMentions(
+  dataText: string,
+  selectionStart: number,
+  selectionEnd: number,
+): { dataText: string; displayCursorPos: number } {
+  // Convert display positions to data positions
+  const startInfo = displayToDataCursorPos(dataText, selectionStart);
+  const endInfo = displayToDataCursorPos(dataText, selectionEnd);
+
+  let dataStart = startInfo.dataCursorPos;
+  let dataEnd = endInfo.dataCursorPos;
+
+  // If start is in a mention, expand to include entire mention
+  if (startInfo.inMention && startInfo.mentionStart) {
+    dataStart = startInfo.mentionStart;
+  }
+
+  // If end is in a mention, expand to include entire mention
+  if (endInfo.inMention && endInfo.mentionEnd) {
+    dataEnd = endInfo.mentionEnd;
+  }
+
+  // If no mention was deleted and positions are the same, delete one character in data
+  if (dataStart === dataEnd) {
+    // This means we're not deleting a mention, so delete one character in dataText
+    dataStart -= 1;
+  }
+
+  const displayCursorPos = convertDataToDisplayText(
+    dataText.slice(0, dataStart),
+  ).length;
+
+  // Delete the range and return new text
+  return {
+    dataText: dataText.slice(0, dataStart) + dataText.slice(dataEnd),
+    displayCursorPos,
+  };
 }
