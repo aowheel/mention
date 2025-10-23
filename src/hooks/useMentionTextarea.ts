@@ -10,7 +10,7 @@ import {
   deleteTextWithMentions,
   insertCharIntoText,
   insertMentionIntoText,
-} from "@/utils/mentionUtils";
+} from "@/utils/mention";
 
 export function useMentionTextarea(): UseMentionTextareaReturn {
   const textareaRef = useRef<HTMLTextAreaElement>(null);

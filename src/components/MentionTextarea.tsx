@@ -1,7 +1,7 @@
 "use client";
 
 import { useMentionTextarea } from "@/hooks/useMentionTextarea";
-import { convertDataToDisplayText } from "@/utils/mentionUtils";
+import { convertDataToDisplayText } from "@/utils/mention";
 import { UserDropdown } from "./UserDropdown";
 
 export function MentionTextarea() {
